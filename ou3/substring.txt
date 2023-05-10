@@ -1,0 +1,154 @@
+// Author: Jakob Fridesjö
+// UmU-id: jafr0025
+
+// Description:
+// The substring finder operates on the principle of copying the substring to a
+// second tape and then matching the characters on from the end and from the
+// beginning of the string, throwing away what doesn't match until either the
+// substring is matched to the string successfully (accept) or nothing of the
+// string remains (reject).
+
+name: Tape optimized substring finder
+init: qCopy
+accept: qAccept
+
+// Function: qCopy
+// Description: Copy the second substring to the second tape
+//
+// Copy 0/1 and move both tapes 
+qCopy,0,_
+qCopy,0,0,>,>
+qCopy,1,_
+qCopy,1,1,>,>
+// Overwrite $ and forward first tape until the string and substring end index
+// are aligned
+qCopy,$,_
+qFW,_,_,>,-
+
+// Function: qStartRW 
+// Description: Start from the end and throw away characters until the first
+//              character of the strings matches
+//
+// Compare and remove character if matching, rewind both tapes
+qStartRW,1,1
+qCmpRW,_,1,<,<
+qStartRW,0,0
+qCmpRW,_,0,<,<
+// Overwrite character and rewind first tape if non-matching
+qStartRW,0,1
+qCmpRW,_,1,<,-
+qStartRW,1,0
+qCmpRW,_,0,<,-
+
+// Function: qStartFW
+// Description: Start from the beginning and throw away characters until the
+//              last character of the strings matches
+//
+// Compare and remove character if matching, rewind both tapes
+qStartFW,0,0
+qCmpFW,_,0,>,>
+qStartFW,1,1
+qCmpFW,_,1,>,>
+// Overwrite character and forward first tape if non-matching
+qStartFW,0,1
+qStartFW,_,1,>,-
+qStartFW,1,0
+qStartFW,_,0,>,-
+
+// Function: qFW
+// Description: Forward until the end of both strings on the two tapes
+//
+// Forward both tapes if no space has been found on either
+qFW,0,0
+qFW,0,0,>,>
+qFW,0,1
+qFW,0,1,>,>
+qFW,1,0
+qFW,1,0,>,>
+qFW,1,1
+qFW,1,1,>,>
+// Forward the first tape if space has been reached on the second tape
+qFW,0,_
+qFW,0,_,>,-
+qFW,1,_
+qFW,1,_,>,-
+// Forward the second tape if space has been reached on the first tape
+qFW,_,0
+qFW,_,0,-,>
+qFW,_,1
+qFW,_,1,-,>
+qFW,_,_
+// Start comparing from the end
+qStartRW,_,_,<,<
+
+// Function: qRW
+// Description: Rewind until the beginning of both strings on the two tapes
+//
+// Rewind both tapes if no space has been found on either
+qRW,0,0
+qRW,0,0,<,<
+qRW,0,1
+qRW,0,1,<,<
+qRW,1,0
+qRW,1,0,<,<
+qRW,1,1
+qRW,1,1,<,<
+// Rewind the first tape if space has been reached on the second tape
+qRW,0,_
+qRW,0,_,<,-
+qRW,1,_
+qRW,1,_,<,-
+// Rewind the second tape if space has been reached on the first tape
+qRW,_,0
+qRW,_,0,-,<
+qRW,_,1
+qRW,_,1,-,<
+qRW,_,_
+// Start comparing from the start
+qStartFW,_,_,>,>
+
+// Function: qCmpRW
+// Description: Compare backwards on the tapes, accept if beginning of
+//              substring has been reached
+//
+// Compare and rewind both tapes if matching
+qCmpRW,0,0
+qCmpRW,0,0,<,<
+qCmpRW,1,1
+qCmpRW,1,1,<,<
+// Rewind if not maching
+qCmpRW,0,1
+qRW,0,1,-,-
+qCmpRW,1,0
+qRW,1,0,-,-
+// Accept if end of the substring has been reached
+qCmpRW,0,_
+qAccept,0,_,-,-
+qCmpRW,1,_
+qAccept,1,_,-,-
+// Accept if end of both strings has been reached
+qCmpRW,_,_
+qAccept,_,_,-,-
+
+// Function: qCmpFW
+// Description: Compare forwards on the tapes, accept if end of substring has
+//              been reached
+//
+// Compare and forward both tapes if matching
+qCmpFW,0,0
+qCmpFW,0,0,>,>
+qCmpFW,1,1
+qCmpFW,1,1,>,>
+qCmpFW,0,1
+// Forward if not maching
+qFW,0,1,-,-
+qCmpFW,1,0
+qFW,1,0,-,-
+// Accept if end of the substring has been reached
+qCmpFW,0,_
+qAccept,0,_,-,-
+qCmpFW,1,_
+qAccept,1,_,-,-
+// Accept if end of both strings has been reached
+qCmpFW,_,_
+qAccept,_,_,-,-
